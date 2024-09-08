@@ -1,0 +1,58 @@
+import gradio as gr
+#from pytube import YouTube
+import os
+from pytubefix import YouTube
+
+def scan_video(url):
+    try:
+        yt = YouTube(url)
+        streams = yt.streams.filter(progressive=True)
+        audio_streams = yt.streams.filter(only_audio=True)
+        
+        options = []
+        for i, stream in enumerate(streams, 1):
+            options.append(f"{i}. Video - {stream.resolution} - {stream.mime_type}")
+        
+        for i, stream in enumerate(audio_streams, len(streams) + 1):
+            options.append(f"{i}. Audio - {stream.abr} - {stream.mime_type}")
+        
+        return "\n".join(options)
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+def download_video(url, choice):
+    try:
+        yt = YouTube(url)
+        streams = list(yt.streams.filter(progressive=True)) + list(yt.streams.filter(only_audio=True))
+        
+        if not choice.isdigit() or int(choice) < 1 or int(choice) > len(streams):
+            return "Invalid choice. Please enter a valid number."
+        
+        chosen_stream = streams[int(choice) - 1]
+        output_path = os.path.join(os.getcwd(), "downloads")
+        os.makedirs(output_path, exist_ok=True)
+        
+        file_path = chosen_stream.download(output_path=output_path)
+        return f"Download complete! File saved at: {file_path}"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+with gr.Blocks() as app:
+    gr.Markdown("# YouTube Downloader")
+    
+    with gr.Row():
+        url_input = gr.Textbox(label="YouTube URL")
+        scan_button = gr.Button("Scan")
+    
+    options_output = gr.Textbox(label="Available Options", interactive=False)
+    
+    with gr.Row():
+        choice_input = gr.Textbox(label="Enter the number of your choice")
+        download_button = gr.Button("Download")
+    
+    result_output = gr.Textbox(label="Result", interactive=False)
+    
+    scan_button.click(fn=scan_video, inputs=url_input, outputs=options_output)
+    download_button.click(fn=download_video, inputs=[url_input, choice_input], outputs=result_output)
+
+app.launch(server_port=7894)
