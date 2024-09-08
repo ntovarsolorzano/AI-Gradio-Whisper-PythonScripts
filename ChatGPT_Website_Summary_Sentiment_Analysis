@@ -1,0 +1,63 @@
+import gradio as gr
+import openai
+import requests
+from bs4 import BeautifulSoup
+
+# Set your OpenAI API key here DONT FORGET TO EDIT THIS! <--
+openai.api_key = 'openai_api_key_here'
+
+def fetch_website_content(url):
+    response = requests.get(url)
+    if response.status_code != 200:
+        return "Failed to fetch the website."
+    
+    soup = BeautifulSoup(response.content, 'html.parser')
+    main_content = soup.find('body')
+    if main_content:
+        return main_content.get_text()
+    else:
+        return "No main content found."
+
+def summarize_and_evaluate(url):
+    content = fetch_website_content(url)
+    
+    # Summarize the content
+    summary_prompt = f"Since you can speak multiple languages, Consider the text language for your answer, if the content is in english, your answer must be english, and if spanish, your answer must be in spanish. Summarize the following text:\n{content}\nSummary:"
+    summary_response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": summary_prompt}
+        ]
+    )
+    summary = summary_response.choices[0].message['content'].strip()
+    
+    # Evaluate the content
+    evaluation_prompt = f"Since you can speak multiple languages, Consider the text language for your answer. Make sure your answer is written in the same language as the input. Evaluate the following text and categorize it as News, Gaming, Sports, etc. Also, determine if the content is positive or negative, be as concise as possible. This answer consists of 3 lines: Category:\nSentiment:\nReason\n. Please go ahead, Evaluate:\n{content}\nEvaluation:"
+    evaluation_response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": evaluation_prompt}
+        ]
+    )
+    evaluation = evaluation_response.choices[0].message['content'].strip()
+    
+    return summary, evaluation
+
+def gradio_interface(url):
+    summary, evaluation = summarize_and_evaluate(url)
+    return summary, evaluation
+
+# Create the Gradio interface
+iface = gr.Interface(
+    fn=gradio_interface,
+    inputs=gr.Textbox(label="Input a link to get its summary and sentiment analysis"),
+    outputs=[gr.Textbox(label="Summary of the given link"), gr.Textbox(label="Sentiment analysis")],
+    title="Website Content Analyzer",
+    description="Enter a website URL to get a summary and evaluation of the main content.",
+    examples=[["https://www.example.com"]]
+)
+
+# Launch the interface
+iface.launch(server_port=9050, debug=True, share=True)
