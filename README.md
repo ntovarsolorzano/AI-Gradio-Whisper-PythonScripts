@@ -50,5 +50,5 @@ Time taken: 1 minutes and 41 seconds	Faster-Whisper
 
 # QR Generator + Link Shortener in Python
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/your_file_id_here)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1js6M6tBXvWWFs5hP9Ef_p4LXdAITI3Nv)
 
